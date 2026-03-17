@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Wizard Vanilla JS</title>
+
+<!-- Fonte -->
+<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+
+<!-- Font Awesome (para os ícones) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+
+    :root {
+        --wizard-color-neutral:  #ccc;
+        --wizard-color-active:   #4183D7;
+        --wizard-color-complete: #87D37C;
+        --wizard-step-size: 64px;
+        --wizard-step-font-size: 24px;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #f6f6f6;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .container {
+        background: #fff;
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    /* Step Indicator */
+    .step-indicator {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    .step-indicator li {
+        display: table-cell;
+        position: relative;
+    }
+
+    .step-indicator li::after {
+        content: "";
+        position: absolute;
+        top: calc(var(--wizard-step-size) / 2);
+        left: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: var(--wizard-color-neutral);
+        z-index: 0;
+    }
+
+    .step-indicator li:last-child::after {
+        display: none;
+    }
+
+    .step {
+        background: #fff;
+        border-radius: 50%;
+        border: 1px solid var(--wizard-color-neutral);
+        color: var(--wizard-color-neutral);
+        font-size: var(--wizard-step-font-size);
+        height: var(--wizard-step-size);
+        width: var(--wizard-step-size);
+        line-height: var(--wizard-step-size);
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    .caption {
+        color: var(--wizard-color-neutral);
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    /* ACTIVE */
+    .step-indicator li.active .step {
+        border-color: var(--wizard-color-active);
+        color: var(--wizard-color-active);
+    }
+
+    .step-indicator li.active .caption {
+        color: var(--wizard-color-active);
+    }
+
+    /* COMPLETE */
+    .step-indicator li.complete::after {
+        background-color: var(--wizard-color-complete);
+    }
+
+    .step-indicator li.complete .step {
+        border-color: var(--wizard-color-complete);
+        color: var(--wizard-color-complete);
+    }
+
+    .step-indicator li.complete .caption {
+        color: var(--wizard-color-complete);
+    }
+
+    /* Step Content */
+    .step-content {
+        display: none;
+        padding: 20px 0;
+    }
+
+    /* Buttons */
+    .step-wrapper {
+        padding: 20px 0;
+        text-align: right;
+    }
+
+    button {
+        padding: 8px 18px;
+        border: none;
+        background: var(--wizard-color-active);
+        color: #fff;
+        cursor: pointer;
+        margin-left: 10px;
+        border-radius: 4px;
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+
+<body>
+
+<form method="POST" action="">
+<div class="container">
+
+    <!-- Step Navigation -->
+    <ol class="step-indicator" id="step-indicator"></ol>
+
+    <!-- STEP 1 -->
+    <div class="step-content" data-step="1">
+        <h2>Step 1</h2>
+        <label>Email</label><br>
+        <input type="email" name="email" placeholder="Enter email"><br><br>
+
+        <label>Password</label><br>
+        <input type="password" name="password" placeholder="Password">
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-content" data-step="2">
+        <h2>Step 2</h2>
+        <label>Example Select</label><br>
+        <select name="select">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+        </select>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-content" data-step="3">
+        <h2>Step 3</h2>
+        <label>Textarea</label><br>
+        <textarea name="textarea" rows="4"></textarea><br><br>
+
+        <label>File</label><br>
+        <input type="file" name="file">
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-content" data-step="4">
+        <h2>Step 4</h2>
+        <label>Textarea</label><br>
+        <textarea name="textarea" rows="4"></textarea><br><br>
+
+        <label>File</label><br>
+        <input type="file" name="file">
+    </div>
+
+    <!-- Buttons -->
+    <div class="step-wrapper">
+        <button type="button" id="btn-back">Voltar</button>
+        <button type="button" id="btn-next">Seguinte</button>
+        <button type="submit" id="btn-submit">Submeter</button>
+    </div>
+
+</div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const steps = [
+        { id: 1, title: "Dados Gerais", icon_class: "fa-solid fa-check" },
+        { id: 2, title: "Envolvidos", icon_class: "fa-solid fa-users" },
+        { id: 3, title: "Infracções", icon_class: "fa-solid fa-triangle-exclamation" },
+        { id: 4, title: "Resumo", icon_class: "fa-solid fa-file-lines" }
+    ];
+
+    let currentStep = 1;
+
+    const indicator = document.getElementById("step-indicator");
+    const contents = document.querySelectorAll(".step-content");
+    const btnBack = document.getElementById("btn-back");
+    const btnNext = document.getElementById("btn-next");
+    const btnSubmit = document.getElementById("btn-submit");
+
+    function renderIndicator() {
+        indicator.innerHTML = "";
+
+        steps.forEach(step => {
+            const li = document.createElement("li");
+
+            if (currentStep === step.id) li.classList.add("active");
+            if (currentStep > step.id) li.classList.add("complete");
+
+            li.innerHTML = `
+                <div class="step">
+                    <i class="${step.icon_class}"></i>
+                </div>
+                <div class="caption">
+                    ${step.title}
+                </div>
+            `;
+
+            indicator.appendChild(li);
+        });
+    }
+
+    function renderContent() {
+        contents.forEach(content => {
+            const step = parseInt(content.dataset.step);
+            content.style.display = step === currentStep ? "block" : "none";
+        });
+    }
+
+    function renderButtons() {
+        btnBack.disabled = currentStep === 1;
+        btnNext.style.display = currentStep === steps.length ? "none" : "inline-block";
+        btnSubmit.style.display = currentStep === steps.length ? "inline-block" : "none";
+    }
+
+    function updateWizard() {
+        renderIndicator();
+        renderContent();
+        renderButtons();
+    }
+
+    btnNext.addEventListener("click", () => {
+        if (currentStep < steps.length) {
+            currentStep++;
+            updateWizard();
+        }
+    });
+
+    btnBack.addEventListener("click", () => {
+        if (currentStep > 1) {
+            currentStep--;
+            updateWizard();
+        }
+    });
+
+    updateWizard();
+});
+</script>
+
+</body>
+</html>
