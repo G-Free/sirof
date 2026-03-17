@@ -1,4 +1,3 @@
-@"
 name: Deploy para InfinityFree
 
 on:
@@ -11,13 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: `${{ secrets.FTP_SERVER }}
-          username: `${{ secrets.FTP_USERNAME }}
-          password: `${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
           server-dir: /htdocs/
-"@ | Out-File -FilePath ".github\workflows\deploy.yml" -Encoding utf8
